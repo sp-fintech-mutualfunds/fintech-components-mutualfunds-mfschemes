@@ -38,7 +38,7 @@ class SchemesComponent extends BaseComponent
     {
         if (isset($this->getData()['id'])) {
             if ($this->getData()['id'] != 0) {
-                $scheme = $this->schemesPackage->getById((int) $this->getData()['id']);
+                $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id']);
 
                 if (!$scheme) {
                     return $this->throwIdNotFound();
@@ -51,11 +51,13 @@ class SchemesComponent extends BaseComponent
 
             return;
         }
+
         $controlActions =
             [
                 // 'disableActionsForIds'  => [1],
                 'actionsToEnable'       =>
                 [
+                    'view'      => 'mf/schemes',
                     'edit'      => 'mf/schemes',
                     'remove'    => 'mf/schemes/remove'
                 ]
@@ -74,11 +76,11 @@ class SchemesComponent extends BaseComponent
             $this->schemesPackage,
             'mf/schemes/view',
             null,
-            ['isin', 'name', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
+            ['isin', 'name', 'last_updated', 'latest_nav', 'diff', 'diff_percent', 'trajectory', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
             true,
-            ['isin', 'name', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
+            ['isin', 'name', 'last_updated', 'latest_nav', 'diff', 'diff_percent', 'trajectory', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
             $controlActions,
-            ['category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
+            ['category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)', 'diff' => 'Difference'],
             $replaceColumns,
             'name'
         );
@@ -91,6 +93,8 @@ class SchemesComponent extends BaseComponent
         foreach ($dataArr as $dataKey => &$data) {
             $data = $this->formatCategory($dataKey, $data);
             $data = $this->formatAmc($dataKey, $data);
+            $data = $this->formatNavInfo($dataKey, $data);
+            $data = $this->formatNavDiff($dataKey, $data);
         }
 
         return $dataArr;
@@ -126,6 +130,78 @@ class SchemesComponent extends BaseComponent
         }
 
         $data['amc_id'] = $this->amcs[$data['amc_id']];
+
+        return $data;
+    }
+
+    protected function formatNavInfo($rowId, $data)
+    {
+        if (!isset($data['latest_nav']) ||
+            (isset($data['latest_nav']) && is_null($data['latest_nav']))
+        ) {
+            $data['latest_nav'] = '-';
+        }
+        if (!isset($data['last_updated']) ||
+            (isset($data['last_updated']) && is_null($data['last_updated']))
+        ) {
+            $data['last_updated'] = '-';
+        }
+
+        return $data;
+    }
+
+    protected function formatNavDiff($rowId, $data)
+    {
+        if (!isset($data['diff']) ||
+            (isset($data['diff']) && is_null($data['diff']))
+        ) {
+            $data['diff'] = '-';
+        } else {
+            $color = 'primary';
+            if (isset($data['trajectory'])) {
+                if ($data['trajectory'] === 'up') {
+                    $color = 'success';
+                } else if ($data['trajectory'] === 'down') {
+                    $color = 'danger';
+                }
+            }
+
+            $data['diff'] = '<span class="text-' . $color . '">' . $data['diff'] . '</span>';
+        }
+
+        if (!isset($data['diff_percent']) ||
+            (isset($data['diff_percent']) && is_null($data['diff_percent']))
+        ) {
+            $data['diff_percent'] = '-';
+        } else {
+            $color = 'primary';
+            if (isset($data['trajectory'])) {
+                if ($data['trajectory'] === 'up') {
+                    $color = 'success';
+                } else if ($data['trajectory'] === 'down') {
+                    $color = 'danger';
+                }
+            }
+
+            $data['diff_percent'] = '<span class="text-' . $color . '">' . $data['diff_percent'] . '</span>';
+        }
+
+        if (!isset($data['trajectory']) ||
+            (isset($data['trajectory']) && is_null($data['trajectory']))
+        ) {
+            $data['trajectory'] = '-';
+        } else {
+            $color = 'primary';
+            if (isset($data['trajectory'])) {
+                if ($data['trajectory'] === 'up') {
+                    $color = 'success';
+                } else if ($data['trajectory'] === 'down') {
+                    $color = 'danger';
+                }
+            }
+
+            $data['trajectory'] = '<span class="text-' . $color . '">' . $data['trajectory'] . '</span>';
+        }
 
         return $data;
     }
