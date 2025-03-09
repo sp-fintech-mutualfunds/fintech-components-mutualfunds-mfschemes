@@ -29,6 +29,14 @@ class SchemesComponent extends BaseComponent
         $this->categoriesPackage = $this->usePackage(MfCategories::class);
 
         $this->amcsPackage = $this->usePackage(MfAmcs::class);
+
+        $this->setModuleSettings(true);
+
+        $this->setModuleSettingsData([
+                'apis' => $this->schemesPackage->getAvailableApis(true, false),
+                'apiClients' => $this->schemesPackage->getAvailableApis(false, false)
+            ]
+        );
     }
 
     /**
@@ -36,6 +44,8 @@ class SchemesComponent extends BaseComponent
      */
     public function viewAction()
     {
+        $this->view->apis = $this->schemesPackage->getAvailableApis(true, false);
+
         if (isset($this->getData()['id'])) {
             if ($this->getData()['id'] != 0) {
                 $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id']);
@@ -43,7 +53,7 @@ class SchemesComponent extends BaseComponent
                 if (!$scheme) {
                     return $this->throwIdNotFound();
                 }
-
+                trace([$scheme]);
                 $this->view->scheme = $scheme;
             }
 
@@ -248,6 +258,19 @@ class SchemesComponent extends BaseComponent
         $this->addResponse(
             $this->package->packagesData->responseMessage,
             $this->package->packagesData->responseCode
+        );
+    }
+
+    public function importschemeAction()
+    {
+        $this->requestIsPost();
+
+        $this->schemesPackage->getSchemeInfo($this->postData());
+
+        $this->addResponse(
+            $this->schemesPackage->packagesData->responseMessage,
+            $this->schemesPackage->packagesData->responseCode,
+            $this->schemesPackage->packagesData->responseData ?? []
         );
     }
 }
