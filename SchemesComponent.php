@@ -53,7 +53,7 @@ class SchemesComponent extends BaseComponent
                 if (!$scheme) {
                     return $this->throwIdNotFound();
                 }
-                trace([$scheme]);
+
                 $this->view->scheme = $scheme;
             }
 
