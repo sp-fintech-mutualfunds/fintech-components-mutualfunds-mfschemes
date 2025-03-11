@@ -1,19 +1,19 @@
 {
-	"name" : "MFSchemes",
+	"name" : "Mutual Fund Schemes",
 	"route" : "mf/schemes",
-	"description" : "<p>Mutual Fund schemes component</p>",
+	"description" : "<p>Mutual Fund Schemes</p>",
 	"module_type" : "components",
 	"app_type" : "fintech",
 	"category" : "mutualfunds",
-	"version" : "0.1.0",
-	"repo" : "https://github.com/sp-fintech/fintech-components-mutualfunds-mfschemes",
+	"version" : "0.2.0",
+	"repo" : "https://github.com/sp-fintech-mutualfunds/fintech-components-mutualfunds-mfschemes",
 	"class" : "Apps\\Fintech\\Components\\Mf\\Schemes\\SchemesComponent",
 	"dependencies" : 
 	{
 		"core" : 
 		{
 			"name" : "Core",
-			"version" : "0.0.0-rc.11",
+			"version" : "0.0.0-rc.12",
 			"repo" : "https://github.com/sp-framework/core"
 		},
 		"apptype" : 
@@ -26,26 +26,26 @@
 		[
 			{
 				"name" : "MfSchemes",
-				"version" : "0.0.0",
-				"repo" : "https://github.com/sp-fintech/fintech-packages-mutualfunds-mfschemes"
+				"version" : "0.3.0",
+				"repo" : "https://github.com/sp-fintech-mutualfunds/fintech-packages-mutualfunds-mfschemes"
 			},
 			
 			{
 				"name" : "MfNavs",
-				"version" : "0.0.0",
-				"repo" : "https://github.com/sp-fintech/fintech-packages-mutualfunds-mfnavs"
-			},
-			
-			{
-				"name" : "MfAmcs",
-				"version" : "0.2.0",
-				"repo" : "https://github.com/sp-fintech/fintech-packages-mutualfunds-mfamcs"
+				"version" : "0.1.0",
+				"repo" : "https://github.com/sp-fintech-mutualfunds/fintech-packages-mutualfunds-mfnavs"
 			},
 			
 			{
 				"name" : "MfCategories",
-				"version" : "0.1.0",
-				"repo" : "https://github.com/sp-fintech/fintech-packages-mutualfunds-mfcategories"
+				"version" : "0.2.0",
+				"repo" : "https://github.com/sp-fintech-mutualfunds/fintech-packages-mutualfunds-mfcategories"
+			},
+			
+			{
+				"name" : "MfAmcs",
+				"version" : "0.3.0",
+				"repo" : "https://github.com/sp-fintech-mutualfunds/fintech-packages-mutualfunds-mfamcs"
 			}
 		],
 		"middlewares" : [],
