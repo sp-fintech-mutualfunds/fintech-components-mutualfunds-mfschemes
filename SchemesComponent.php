@@ -273,4 +273,32 @@ class SchemesComponent extends BaseComponent
             $this->schemesPackage->packagesData->responseData ?? []
         );
     }
+
+    public function searchSchemesForAMCAction()
+    {
+        $this->requestIsPost();
+
+        $this->schemesPackage->searchSchemesForAMC($this->postData());
+
+        $this->addResponse(
+            $this->schemesPackage->packagesData->responseMessage,
+            $this->schemesPackage->packagesData->responseCode,
+            $this->schemesPackage->packagesData->responseData ?? []
+        );
+    }
+
+    public function getSchemeNavAction()
+    {
+        $this->requestIsPost();
+
+        if (!isset($this->postData()['id'])) {
+            $this->addResponse('Scheme ID not set', 1);
+
+            return;
+        }
+
+        $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['id']);
+
+        $this->addResponse('Ok', 0, ['scheme' => $scheme]);
+    }
 }
