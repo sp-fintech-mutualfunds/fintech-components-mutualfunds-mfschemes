@@ -299,12 +299,12 @@ class SchemesComponent extends BaseComponent
 
         $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['id']);
 
-        if ($scheme['navs']) {
+        if ($scheme && $scheme['navs']) {
             $this->addResponse('Ok', 0, ['scheme' => $scheme]);
 
             return;
         }
 
-        $this->addResponse('Error: We do not have NAV data for scheme : ' . $scheme['name'], 1);
+        $this->addResponse('Error: We do not have NAV data for scheme : ' . $scheme['name'] . '. Try importing NAVs!', 1, ['scheme' => $scheme]);
     }
 }
