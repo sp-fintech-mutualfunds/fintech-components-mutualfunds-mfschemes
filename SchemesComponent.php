@@ -48,11 +48,57 @@ class SchemesComponent extends BaseComponent
 
         if (isset($this->getData()['id'])) {
             if ($this->getData()['id'] != 0) {
-                $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id']);
+                $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id'], false);
 
                 if (!$scheme) {
                     return $this->throwIdNotFound();
                 }
+
+                if (!isset($scheme['navs_chunks']['navs_chunks']['week'])) {
+                    $scheme['navs_chunks']['navs_chunks']['week'] = false;
+                }
+                if (!isset($scheme['navs_chunks']['navs_chunks']['month'])) {
+                    $scheme['navs_chunks']['navs_chunks']['month'] = false;
+                }
+                if (!isset($scheme['navs_chunks']['navs_chunks']['threeMonth'])) {
+                    $scheme['navs_chunks']['navs_chunks']['threeMonth'] = false;
+                }
+                if (!isset($scheme['navs_chunks']['navs_chunks']['sixMonth'])) {
+                    $scheme['navs_chunks']['navs_chunks']['sixMonth'] = false;
+                }
+                if (!isset($scheme['navs_chunks']['navs_chunks']['year'])) {
+                    $scheme['navs_chunks']['navs_chunks']['year'] = false;
+                }
+
+                if (isset($scheme['navs_chunks']['navs_chunks']['threeYear']) &&
+                    count($scheme['navs_chunks']['navs_chunks']['threeYear']) > 0
+                ) {
+                    $scheme['navs_chunks']['navs_chunks']['threeYear'] = true;
+                } else {
+                    $scheme['navs_chunks']['navs_chunks']['threeYear'] = false;
+                }
+                if (isset($scheme['navs_chunks']['navs_chunks']['fiveYear']) &&
+                    count($scheme['navs_chunks']['navs_chunks']['fiveYear']) > 0
+                ) {
+                    $scheme['navs_chunks']['navs_chunks']['fiveYear'] = true;
+                } else {
+                    $scheme['navs_chunks']['navs_chunks']['fiveYear'] = false;
+                }
+                if (isset($scheme['navs_chunks']['navs_chunks']['tenYear']) &&
+                    count($scheme['navs_chunks']['navs_chunks']['tenYear']) > 0
+                ) {
+                    $scheme['navs_chunks']['navs_chunks']['tenYear'] = true;
+                } else {
+                    $scheme['navs_chunks']['navs_chunks']['tenYear'] = false;
+                }
+
+                if (count($scheme['navs_chunks']['navs_chunks']['all']) > 365) {
+                    $scheme['navs_chunks']['navs_chunks']['all'] = true;
+                }
+
+                $this->view->schemeNavChunks = $scheme['navs_chunks']['navs_chunks'];
+
+                unset($scheme['navs_chunks']['navs_chunks']);//Remove Chunks
 
                 $this->view->scheme = $scheme;
             }
@@ -67,9 +113,7 @@ class SchemesComponent extends BaseComponent
                 // 'disableActionsForIds'  => [1],
                 'actionsToEnable'       =>
                 [
-                    'view'      => 'mf/schemes',
-                    'edit'      => 'mf/schemes',
-                    'remove'    => 'mf/schemes/remove'
+                    'view'      => 'mf/schemes'
                 ]
             ];
 
@@ -83,16 +127,15 @@ class SchemesComponent extends BaseComponent
             };
 
         $this->generateDTContent(
-            $this->schemesPackage,
-            'mf/schemes/view',
-            null,
-            ['isin', 'name', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
-            true,
-            ['isin', 'name', 'category_id', 'scheme_type', 'plan_type', 'expense_ratio_type', 'management_type', 'amc_id', 'amfi_code'],
-            $controlActions,
-            ['category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
-            $replaceColumns,
-            'name'
+            package : $this->schemesPackage,
+            postUrl : 'mf/schemes/view',
+            postUrlParams: null,
+            columnsForTable : ['isin', 'name', 'category_id', 'scheme_type', 'management_type', 'amc_id'],
+            columnsForFilter : ['isin', 'name', 'category_id', 'scheme_type', 'management_type', 'amc_id'],
+            controlActions : $controlActions,
+            dtReplaceColumnsTitle : ['category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
+            dtReplaceColumns : $replaceColumns,
+            dtNotificationTextFromColumn :'name'
         );
 
         $this->view->pick('schemes/list');
@@ -266,6 +309,19 @@ class SchemesComponent extends BaseComponent
         $this->requestIsPost();
 
         $this->schemesPackage->getSchemeInfo($this->postData());
+
+        $this->addResponse(
+            $this->schemesPackage->packagesData->responseMessage,
+            $this->schemesPackage->packagesData->responseCode,
+            $this->schemesPackage->packagesData->responseData ?? []
+        );
+    }
+
+    public function getSchemeNavChunksAction()
+    {
+        $this->requestIsPost();
+
+        $this->schemesPackage->getSchemeNavChunks($this->postData());
 
         $this->addResponse(
             $this->schemesPackage->packagesData->responseMessage,
