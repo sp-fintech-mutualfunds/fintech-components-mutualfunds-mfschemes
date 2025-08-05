@@ -44,8 +44,6 @@ class SchemesComponent extends BaseComponent
      */
     public function viewAction()
     {
-        $this->view->apis = $this->schemesPackage->getAvailableApis(true, false);
-
         if (isset($this->getData()['id'])) {
             if ($this->getData()['id'] != 0) {
                 $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id'], false);
@@ -79,7 +77,6 @@ class SchemesComponent extends BaseComponent
             $amc['name'] = $amc['name'] . ' (' . $amc['id'] . ')';
         }
 
-        $this->view->amcs = msort($amcs, 'name');
 
         $categories = $this->categoriesPackage->getAll()->mfcategories;
 
@@ -101,7 +98,11 @@ class SchemesComponent extends BaseComponent
             }
         }
 
-        $this->view->categories = msort(array: $categories, key: 'name', preserveKey: true);
+        if ($this->request->isGet()) {
+            $this->view->apis = $this->schemesPackage->getAvailableApis(true, false);
+            $this->view->amcs = msort($amcs, 'name');
+            $this->view->categories = msort(array: $categories, key: 'name', preserveKey: true);
+        }
 
         if (isset($this->getData()['compare'])) {
             $this->view->pick('schemes/list');
@@ -129,14 +130,18 @@ class SchemesComponent extends BaseComponent
                 return $dataArr;
             };
 
+        if (count($this->postData()) === 0) {
+            // $packagesData = [];
+        }
+
         $this->generateDTContent(
             package : $this->schemesPackage,
             postUrl : 'mf/schemes/view',
             postUrlParams: null,
-            columnsForTable : ['name', 'day_cagr', 'day_trajectory', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'category_id', 'amc_id', 'start_date', 'navs_last_updated'],
-            columnsForFilter : ['name', 'day_cagr', 'day_trajectory', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'category_id', 'amc_id', 'start_date', 'navs_last_updated'],
+            columnsForTable : ['name', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
+            columnsForFilter : ['name', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
             controlActions : $controlActions,
-            dtReplaceColumnsTitle : ['day_cagr' => '1D', 'day_trajectory' => '1D Trend', 'year_cagr' => '1Y', 'two_year_cagr' => '2Y', 'three_year_cagr' => '3Y', 'five_year_cagr' => '5Y', 'seven_year_cagr' => '7Y', 'ten_year_cagr' => '10Y', 'fifteen_year_cagr' => '15Y', 'category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
+            dtReplaceColumnsTitle : ['day_cagr' => '1DR', 'day_trajectory' => '1D Trend', 'year_cagr' => '1YR', 'two_year_cagr' => '2YR', 'three_year_cagr' => '3YR', 'five_year_cagr' => '5YR', 'seven_year_cagr' => '7YR', 'ten_year_cagr' => '10YR', 'fifteen_year_cagr' => '15YR', 'year_rr' => '1YRR', 'two_year_rr' => '2YRR', 'three_year_rr' => '3YRR', 'five_year_rr' => '5YRR', 'seven_year_rr' => '7YRR', 'ten_year_rr' => '10YRR', 'fifteen_year_rr' => '15YRR', 'category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
             dtReplaceColumns : $replaceColumns,
             dtNotificationTextFromColumn :'name'
         );
@@ -173,6 +178,28 @@ class SchemesComponent extends BaseComponent
             }
             if (!isset($data['fifteen_year_cagr'])) {
                 $data['fifteen_year_cagr'] = '-';
+            }
+
+            if (!isset($data['year_rr'])) {
+                $data['year_rr'] = '-';
+            }
+            if (!isset($data['two_year_rr'])) {
+                $data['two_year_rr'] = '-';
+            }
+            if (!isset($data['three_year_rr'])) {
+                $data['three_year_rr'] = '-';
+            }
+            if (!isset($data['five_year_rr'])) {
+                $data['five_year_rr'] = '-';
+            }
+            if (!isset($data['seven_year_rr'])) {
+                $data['seven_year_rr'] = '-';
+            }
+            if (!isset($data['ten_year_rr'])) {
+                $data['ten_year_rr'] = '-';
+            }
+            if (!isset($data['fifteen_year_rr'])) {
+                $data['fifteen_year_rr'] = '-';
             }
 
             $data = $this->formatCategory($dataKey, $data);
@@ -233,6 +260,7 @@ class SchemesComponent extends BaseComponent
         $this->addResponse('Ok', 0,
             [
                 'navs_chunks'       => $scheme['navs_chunks']['navs_chunks'],
+                'trend'             => $scheme['trend'],
                 'rolling_returns'   => $scheme['rolling_returns'],
                 'rolling_periods'   => $rollingPeriods
             ]
@@ -245,18 +273,25 @@ class SchemesComponent extends BaseComponent
             if ($time === 'week') {
                 if (!isset($scheme['navs_chunks']['navs_chunks'][$time])) {
                     $scheme['navs_chunks']['navs_chunks'][$time] = false;
+                    $scheme['trend'][$time] = false;
+                } else {
+                    $weekData = $this->schemesPackage->getSchemeNavChunks(['scheme_id' => $scheme['id'], 'chunk_size' => 'week']);
+                    $scheme['trend'][$time] = $weekData['trend'];
                 }
             } else if ($time !== 'week' && $time !== 'all') {
                 if (isset($scheme['navs_chunks']['navs_chunks'][$time]) &&
                     count($scheme['navs_chunks']['navs_chunks'][$time]) > 0
                 ) {
                     $scheme['navs_chunks']['navs_chunks'][$time] = true;
+                    $scheme['trend'][$time] = true;
                 } else {
                     $scheme['navs_chunks']['navs_chunks'][$time] = false;
+                    $scheme['trend'][$time] = false;
                 }
             } else if ($time === 'all') {
                 if (count($scheme['navs_chunks']['navs_chunks'][$time]) > 365) {
                     $scheme['navs_chunks']['navs_chunks'][$time] = true;
+                    $scheme['trend'][$time] = true;
                 }
             }
         }
@@ -418,19 +453,6 @@ class SchemesComponent extends BaseComponent
         );
     }
 
-    public function getSchemeCompareDataAction()
-    {
-        $this->requestIsPost();
-
-        $this->schemesPackage->getSchemeCompareData($this->postData());
-
-        $this->addResponse(
-            $this->schemesPackage->packagesData->responseMessage,
-            $this->schemesPackage->packagesData->responseCode,
-            $this->schemesPackage->packagesData->responseData ?? []
-        );
-    }
-
     public function getSchemeNavChunksAction()
     {
         $this->requestIsPost();
@@ -483,6 +505,34 @@ class SchemesComponent extends BaseComponent
         );
     }
 
+    public function searchAllSchemesAction()
+    {
+        $this->requestIsPost();
+
+        $this->schemesPackage->searchAllSchemes($this->postData()['search']);
+
+        $this->addResponse(
+            $this->schemesPackage->packagesData->responseMessage,
+            $this->schemesPackage->packagesData->responseCode,
+            $this->schemesPackage->packagesData->responseData ?? []
+        );
+    }
+
+    public function getSchemeNavByDateAction()
+    {
+        $this->requestIsPost();
+
+        $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['scheme_id'], false, false, false);
+
+        $this->schemesPackage->getSchemeNavByDate($scheme, $this->postData()['date'], false, $this->postData()['latest']);
+
+        $this->addResponse(
+            $this->schemesPackage->packagesData->responseMessage,
+            $this->schemesPackage->packagesData->responseCode,
+            $this->schemesPackage->packagesData->responseData ?? []
+        );
+    }
+
     public function getSchemeDetailsAction()
     {
         $this->requestIsPost();
@@ -493,7 +543,13 @@ class SchemesComponent extends BaseComponent
             return;
         }
 
-        $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['id'], false, false, false);
+        $navs = false;
+
+        if (isset($this->postData()['navs'])) {
+            $navs = true;
+        }
+
+        $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['id'], $navs, false, false);
 
         if ($scheme) {
             $this->addResponse('Ok', 0, ['scheme' => $scheme]);
