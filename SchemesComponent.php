@@ -50,6 +50,25 @@ class SchemesComponent extends BaseComponent
      */
     public function viewAction()
     {
+        $this->view->today = $this->view->timeline = (\Carbon\Carbon::now())->toDateString();
+        $postUrl = 'mf/schemes/view';
+
+        if (isset($this->getData()['timeline'])) {
+            try {
+                $this->view->timeline = (\Carbon\Carbon::parse($this->getData()['timeline']))->toDateString();
+
+                if ($this->view->timeline !== $this->view->today) {
+                    $postUrl = 'mf/schemes/view/q/timeline/' . $this->view->timeline;
+                } else {
+                    $this->view->timeline = false;
+                }
+            } catch (\throwable $e) {
+                // Do nothing
+            }
+        } else {
+            $this->view->timeline = false;
+        }
+
         if (isset($this->getData()['id'])) {
             if ($this->getData()['id'] != 0) {
                 $this->view->custom = false;
@@ -118,7 +137,11 @@ class SchemesComponent extends BaseComponent
                     return;
                 }
 
-                $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id'], false, true, true);
+                if (isset($this->getData()['timeline']) && $this->view->timeline) {
+                    $scheme = $this->schemesPackage->getSchemeSnapshotById((int) $this->getData()['id'], $this->getData()['timeline'], true, true);
+                } else {
+                    $scheme = $this->schemesPackage->getSchemeById((int) $this->getData()['id'], false, true, true);
+                }
 
                 if (!$scheme) {
                     return $this->throwIdNotFound();
@@ -126,7 +149,12 @@ class SchemesComponent extends BaseComponent
 
                 $this->view->compare = false;
 
-                $this->getProcessedSchemeNavChunksAction($scheme);
+                $timeline = false;
+                if ($this->view->timeline) {
+                    $timeline = true;
+                }
+
+                $this->getProcessedSchemeNavChunksAction($scheme, false, $timeline);
 
                 $this->view->schemeNavChunks = $scheme['navs_chunks']['navs_chunks'];
 
@@ -188,35 +216,6 @@ class SchemesComponent extends BaseComponent
             return true;
         }
 
-        $this->view->today = $this->view->timeline = (\Carbon\Carbon::now())->toDateString();
-        $postUrl = 'mf/schemes/view';
-
-        if (isset($this->getData()['timeline'])) {
-            try {
-                $this->view->timeline = (\Carbon\Carbon::parse($this->getData()['timeline']))->toDateString();
-
-                $postUrl = 'mf/schemes/view/q/timeline/' . $this->view->timeline;
-            } catch (\throwable $e) {
-                // Do nothing
-            }
-        }
-
-        $controlActions =
-            [
-                'includeQ'              => true,
-                'actionsToEnable'       =>
-                [
-                    'view'          => 'mf/schemes/q/',
-                    'customNavs'    =>
-                        [
-                            'title'             => 'Custom Navs',
-                            'icon'              => 'money-bill-trend-up',
-                            'additionalClass'   => 'custom contentAjaxLink',
-                            'link'              => 'mf/schemes/q/custom/true/'
-                        ],
-                ]
-            ];
-
         $replaceColumns =
             function ($dataArr) {
                 if ($dataArr && is_array($dataArr) && count($dataArr) > 0) {
@@ -228,22 +227,42 @@ class SchemesComponent extends BaseComponent
 
         $conditions = null;
 
+        $viewUrl = 'mf/schemes/q/';
+        $urls = ['view' => $viewUrl];
+        $urls['customNavs'] =
+            [
+                'title'             => 'Custom Navs',
+                'icon'              => 'money-bill-trend-up',
+                'additionalClass'   => 'custom contentAjaxLink',
+                'link'              => 'mf/schemes/q/custom/true/'
+            ];
+
         if ($this->request->isPost()) {
             if (count($this->dispatcher->getParams()) > 0 &&
-                $this->dispatcher->getParams()[0] === 'timeline'
+                $this->dispatcher->getParams()[0] === 'timeline' &&
+                $this->dispatcher->getParams()[1] !== $this->view->today
             ) {
                 $conditions = ['conditions' => '-|start_date|lessthanequals|' . $this->dispatcher->getParams()[1] .  '&'];
+
+                $urls['view'] = 'mf/schemes/q/timeline/' . $this->dispatcher->getParams()[1] . '/';
+                unset($urls['customNavs']);
             }
         }
+
+        $controlActions =
+            [
+                'includeQ'              => true,
+                'actionsToEnable'       => $urls
+            ];
 
         $this->generateDTContent(
             package : $this->schemesPackage,
             postUrl : $postUrl,
             postUrlParams: $conditions,
-            columnsForTable : ['name', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
-            columnsForFilter : ['name', 'year_cagr', 'two_year_cagr', 'three_year_cagr', 'five_year_cagr', 'seven_year_cagr', 'ten_year_cagr', 'fifteen_year_cagr', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
+            columnsForTable : ['name', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
+            columnsForFilter : ['name', 'year_rr', 'two_year_rr', 'three_year_rr', 'five_year_rr', 'seven_year_rr', 'ten_year_rr', 'fifteen_year_rr', 'category_id', 'day_cagr', 'day_trajectory', 'amc_id', 'start_date', 'navs_last_updated'],
             controlActions : $controlActions,
-            dtReplaceColumnsTitle : ['day_cagr' => '1DTR', 'day_trajectory' => '1D Trend', 'year_cagr' => '1YTR', 'two_year_cagr' => '2YTR', 'three_year_cagr' => '3YTR', 'five_year_cagr' => '5YTR', 'seven_year_cagr' => '7YTR', 'ten_year_cagr' => '10YTR', 'fifteen_year_cagr' => '15YTR', 'year_rr' => '1YRR', 'two_year_rr' => '2YRR', 'three_year_rr' => '3YRR', 'five_year_rr' => '5YRR', 'seven_year_rr' => '7YRR', 'ten_year_rr' => '10YRR', 'fifteen_year_rr' => '15YRR', 'category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
+            dtReplaceColumnsTitle : ['day_cagr' => '1DTR', 'day_trajectory' => '1D Trend', 'year_rr' => '1YRR', 'two_year_rr' => '2YRR', 'three_year_rr' => '3YRR', 'five_year_rr' => '5YRR', 'seven_year_rr' => '7YRR', 'ten_year_rr' => '10YRR', 'fifteen_year_rr' => '15YRR', 'category_id' => 'category type (ID)', 'amc_id' => 'amc (ID)'],
             dtReplaceColumns : $replaceColumns,
             dtNotificationTextFromColumn :'name'
         );
@@ -254,19 +273,23 @@ class SchemesComponent extends BaseComponent
     protected function replaceColumns($dataArr)
     {
         foreach ($dataArr as $dataKey => &$data) {
+            if (count($this->dispatcher->getParams()) > 0 &&
+                $this->dispatcher->getParams()[0] === 'timeline'
+            ) {
+                $snapshot = $this->schemesPackage->getSchemeSnapshotById($data['id'], $this->dispatcher->getParams()[1]);
+
+                if ($snapshot) {
+                    $data = array_replace($data, $snapshot);
+                } else {
+                    $data['name'] = '^^ ' . $data['name'];
+                }
+            }
+
             if (!isset($data['day_trajectory'])) {
                 $data['day_trajectory'] = '-';
             }
 
-            foreach (['day_cagr',
-            'year_cagr',
-            'two_year_cagr',
-            'three_year_cagr',
-            'five_year_cagr',
-            'seven_year_cagr',
-            'ten_year_cagr',
-            'fifteen_year_cagr',
-            'year_rr',
+            foreach (['year_rr',
             'two_year_rr',
             'three_year_rr',
             'five_year_rr',
@@ -340,7 +363,14 @@ class SchemesComponent extends BaseComponent
 
     public function getProcessedSchemeDataAction()
     {
-        $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['scheme_id'], false);
+        $timeline = false;
+        if (isset($this->postData()['timeline'])) {
+            $timeline = $this->postData()['timeline'];
+
+            $scheme = $this->schemesPackage->getSchemeSnapshotById((int) $this->postData()['scheme_id'], $this->postData()['timeline'], true, true);
+        } else {
+            $scheme = $this->schemesPackage->getSchemeById((int) $this->postData()['scheme_id'], false);
+        }
 
         if (!$scheme) {
             return $this->throwIdNotFound();
@@ -361,12 +391,14 @@ class SchemesComponent extends BaseComponent
         }
 
         if (isset($this->postData()['rolling_returns']) && $this->postData()['rolling_returns'] == 'true') {
-            $responseData['rolling_returns'] = $scheme['rolling_returns'];
-            unset($scheme['rolling_returns']);
-
             $rollingPeriods = $this->getProcessedSchemeRollingReturnsAction($scheme);
 
             $responseData['rolling_periods'] = $rollingPeriods;
+
+            $responseData['rolling_returns'] = $scheme['rolling_returns'];
+
+            unset($scheme['rolling_returns']);
+
         }
 
         $responseData['scheme'] = $scheme;
@@ -374,7 +406,7 @@ class SchemesComponent extends BaseComponent
         $this->addResponse('Ok', 0, $responseData);
     }
 
-    public function getProcessedSchemeNavChunksAction(&$scheme, $customChunks = false)
+    public function getProcessedSchemeNavChunksAction(&$scheme, $customChunks = false, $timeline = false)
     {
         $chunks = &$scheme['navs_chunks']['navs_chunks'];
 
@@ -386,36 +418,25 @@ class SchemesComponent extends BaseComponent
             if ($time === 'week') {
                 if (!isset($chunks[$time])) {
                     $chunks[$time] = false;
-                    // if (!$customChunks) {
-                        $scheme['trend'][$time] = false;
-                    // }
+                    $scheme['trend'][$time] = false;
                 } else {
-                    $weekData = $this->schemesPackage->getSchemeNavChunks(['scheme_id' => $scheme['id'], 'chunk_size' => 'week'], $customChunks);
-                    // trace([$weekData]);
-                    // if (!$customChunks) {
-                        $scheme['trend'][$time] = $weekData['trend'];
-                    // }
+                    $weekData = $this->schemesPackage->getSchemeNavChunks(['scheme_id' => $scheme['id'], 'chunk_size' => 'week'], $customChunks, $timeline);
+                    $scheme['trend'][$time] = $weekData['trend'];
                 }
             } else if ($time !== 'week' && $time !== 'all') {
                 if (isset($chunks[$time]) &&
                     count($chunks[$time]) > 0
                 ) {
                     $chunks[$time] = true;
-                    // if (!$customChunks) {
-                        $scheme['trend'][$time] = true;
-                    // }
+                    $scheme['trend'][$time] = true;
                 } else {
                     $chunks[$time] = false;
-                    // if (!$customChunks) {
-                        $scheme['trend'][$time] = false;
-                    // }
+                    $scheme['trend'][$time] = false;
                 }
             } else if ($time === 'all') {
                 if (count($chunks[$time]) > 365) {
                     $chunks[$time] = true;
-                    // if (!$customChunks) {
-                        $scheme['trend'][$time] = true;
-                    // }
+                    $scheme['trend'][$time] = true;
                 }
             }
         }
@@ -430,7 +451,7 @@ class SchemesComponent extends BaseComponent
         }
 
         $rollingPeriods = [];
-        foreach (['year', 'two_year', 'three_year', 'five_year', 'seven_year', 'ten_year', 'fifteen_year', 'twenty_year', 'twenty_five_year'] as $rrTime) {
+        foreach (['year', 'two_year', 'three_year', 'five_year', 'seven_year', 'ten_year', 'fifteen_year', 'twenty_year', 'twenty_five_year', 'thirty_year'] as $rrTime) {
             if (isset($rr[$rrTime])) {
                 $rr[$rrTime] = true;
 
@@ -453,122 +474,6 @@ class SchemesComponent extends BaseComponent
 
         return $rollingPeriods;
     }
-    // protected function formatNavInfo($rowId, $data)
-    // {
-    //     if (!isset($data['latest_nav']) ||
-    //         (isset($data['latest_nav']) && is_null($data['latest_nav']))
-    //     ) {
-    //         $data['latest_nav'] = '-';
-    //     }
-    //     if (!isset($data['last_updated']) ||
-    //         (isset($data['last_updated']) && is_null($data['last_updated']))
-    //     ) {
-    //         $data['last_updated'] = '-';
-    //     }
-
-    //     return $data;
-    // }
-
-    // protected function formatNavDiff($rowId, $data)
-    // {
-    //     if (!isset($data['diff']) ||
-    //         (isset($data['diff']) && is_null($data['diff']))
-    //     ) {
-    //         $data['diff'] = '-';
-    //     } else {
-    //         $color = 'primary';
-    //         if (isset($data['trajectory'])) {
-    //             if ($data['trajectory'] === 'up') {
-    //                 $color = 'success';
-    //             } else if ($data['trajectory'] === 'down') {
-    //                 $color = 'danger';
-    //             }
-    //         }
-
-    //         $data['diff'] = '<span class="text-' . $color . '">' . $data['diff'] . '</span>';
-    //     }
-
-    //     if (!isset($data['diff_percent']) ||
-    //         (isset($data['diff_percent']) && is_null($data['diff_percent']))
-    //     ) {
-    //         $data['diff_percent'] = '-';
-    //     } else {
-    //         $color = 'primary';
-    //         if (isset($data['trajectory'])) {
-    //             if ($data['trajectory'] === 'up') {
-    //                 $color = 'success';
-    //             } else if ($data['trajectory'] === 'down') {
-    //                 $color = 'danger';
-    //             }
-    //         }
-
-    //         $data['diff_percent'] = '<span class="text-' . $color . '">' . $data['diff_percent'] . '</span>';
-    //     }
-
-    //     if (!isset($data['trajectory']) ||
-    //         (isset($data['trajectory']) && is_null($data['trajectory']))
-    //     ) {
-    //         $data['trajectory'] = '-';
-    //     } else {
-    //         $color = 'primary';
-    //         if (isset($data['trajectory'])) {
-    //             if ($data['trajectory'] === 'up') {
-    //                 $color = 'success';
-    //             } else if ($data['trajectory'] === 'down') {
-    //                 $color = 'danger';
-    //             }
-    //         }
-
-    //         $data['trajectory'] = '<span class="text-' . $color . '">' . $data['trajectory'] . '</span>';
-    //     }
-
-    //     return $data;
-    // }
-
-    // /**
-    //  * @acl(name=add)
-    //  */
-    // public function addAction()
-    // {
-    //     $this->requestIsPost();
-
-    //     //$this->package->add{?}($this->postData());
-
-    //     $this->addResponse(
-    //         $this->package->packagesData->responseMessage,
-    //         $this->package->packagesData->responseCode
-    //     );
-    // }
-
-    // /**
-    //  * @acl(name=update)
-    //  */
-    // public function updateAction()
-    // {
-    //     $this->requestIsPost();
-
-    //     //$this->package->update{?}($this->postData());
-
-    //     $this->addResponse(
-    //         $this->package->packagesData->responseMessage,
-    //         $this->package->packagesData->responseCode
-    //     );
-    // }
-
-    // /**
-    //  * @acl(name=remove)
-    //  */
-    // public function removeAction()
-    // {
-    //     $this->requestIsPost();
-
-    //     //$this->package->remove{?}($this->postData());
-
-    //     $this->addResponse(
-    //         $this->package->packagesData->responseMessage,
-    //         $this->package->packagesData->responseCode
-    //     );
-    // }
 
     public function importschemeAction()
     {
@@ -592,7 +497,12 @@ class SchemesComponent extends BaseComponent
             $customChunks = true;
         }
 
-        $this->schemesPackage->getSchemeNavChunks($this->postData(), $customChunks);
+        $timeline = false;
+        if (isset($this->postData()['timeline'])) {
+            $timeline = $this->postData()['timeline'];
+        }
+
+        $this->schemesPackage->getSchemeNavChunks($this->postData(), $customChunks, $timeline);
 
         $this->addResponse(
             $this->schemesPackage->packagesData->responseMessage,
@@ -610,7 +520,12 @@ class SchemesComponent extends BaseComponent
             $customRollingReturns = true;
         }
 
-        $this->schemesPackage->getSchemeRollingReturns($this->postData(), $customRollingReturns);
+        $timeline = false;
+        if (isset($this->postData()['timeline'])) {
+            $timeline = $this->postData()['timeline'];
+        }
+
+        $this->schemesPackage->getSchemeRollingReturns($this->postData(), $customRollingReturns, $timeline);
 
         $this->addResponse(
             $this->schemesPackage->packagesData->responseMessage,
